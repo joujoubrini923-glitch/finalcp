@@ -23,22 +23,18 @@
 
   /* ================= LOGIN ================= */
   function loginView(root) {
-    const hint = Store.settings().passwordChanged ? '' :
-      `<p class="login-hint">First time? Default password is <code>admin123</code> — change it in Settings after login.</p>`;
     root.innerHTML = `
     <div class="container page">
       <div class="login-wrap">
         <div class="card login-card" id="login-card">
           <div class="login-lock">${ic('lock')}</div>
           <h2 style="font-size:1.35rem">Coach Access</h2>
-          <p class="muted" style="margin:8px 0 22px;font-size:.9rem">This area is restricted to the academy coach. ${Store.cloudEnabled && Store.cloudEnabled() ? 'Your changes sync instantly to the cloud for every visitor.' : 'All data stays in this browser.'}</p>
           <form id="login-form">
             <input class="input" type="password" id="login-pw" placeholder="Password" autocomplete="current-password" style="text-align:center;font-size:1.05rem">
             <div style="height:14px"></div>
             <button class="btn btn-primary btn-block" type="submit">${ic('key')}Unlock Dashboard</button>
           </form>
           <p class="login-hint" id="login-err" style="color:var(--red);display:none">Wrong password — try again.</p>
-          ${hint}
           <p class="login-hint"><a class="link-accent" href="#/">${ic('arrowLeft')} Back to the public site</a></p>
         </div>
       </div>
