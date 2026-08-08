@@ -234,20 +234,20 @@
           <h3>Think you've got what it takes?</h3>
           <p class="muted">Whether you're writing your first <span class="mono">if</span> statement or grinding for the national team — there's a seat (and a leaderboard) waiting for you.</p>
           <ul class="jp-list">
-            <li>${ic('check')}Structured training in real groups — from Rookies to Elite</li>
+            <li>${ic('check')}Structured training in real groups — from beginners to advanced</li>
             <li>${ic('check')}Weekly problems, timed contests and a live leaderboard</li>
-            <li>${ic('check')}Topic mastery, levels and achievements to chase</li>
+            <li>${ic('check')}Topic mastery and competitions to participate in</li>
           </ul>
         </div>
         <div class="card reveal">
           <div class="card-title">${ic('userPlus')}Apply now</div>
           <form id="join-form" style="margin-top:14px">
             <div class="field-row">
-              <label class="field"><span>Your name *</span><input class="input" id="jf-name" maxlength="60" placeholder="e.g. Amine Ben Salah"></label>
-              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="jf-age" type="number" min="4" max="120" placeholder="14"></label>
+              <label class="field"><span>Your name *</span><input class="input" id="jf-name" maxlength="60" placeholder=""></label>
+              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="jf-age" type="number" min="4" max="120" placeholder="13-18"></label>
             </div>
             <label class="field"><span>Email *</span><input class="input" id="jf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
-            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="jf-level" maxlength="120" placeholder="e.g. Beginner in C++ — solved ~50 easy problems"></label>
+            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="jf-level" maxlength="120" placeholder="e.g. new to coding"></label>
             <label class="field"><span>Anything else? <span class="muted tiny">(optional)</span></span><textarea class="input" id="jf-desc" rows="3" maxlength="600" placeholder="Why do you want to join? Experience, contests, goals…"></textarea></label>
             <input type="text" id="jf-web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
             <div class="join-done hidden" id="join-done">${ic('check')}<span>Application sent! The coach reviews every request and will reach out by email.</span></div>
@@ -272,8 +272,8 @@
           <div class="card-title">${ic('help')}Ask the coach</div>
           <form id="question-form" style="margin-top:14px">
             <div class="field-row">
-              <label class="field"><span>Your name *</span><input class="input" id="qf-name" maxlength="60" placeholder="e.g. Yasmine Trabelsi"></label>
-              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="qf-age" type="number" min="4" max="120" placeholder="14"></label>
+              <label class="field"><span>Your name *</span><input class="input" id="qf-name" maxlength="60" placeholder=""></label>
+              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="qf-age" type="number" min="4" max="120" placeholder="13-18"></label>
             </div>
             <label class="field"><span>Email *</span><input class="input" id="qf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
             <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="qf-level" maxlength="120" placeholder="e.g. Total beginner — never coded before"></label>
