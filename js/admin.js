@@ -79,6 +79,7 @@
     ['solves', 'check', 'Record Solves'],
     ['contests', 'trophy', 'Contests'],
     ['achievements', 'medal', 'Achievements'],
+    ['requests', 'userPlus', 'Join Requests'],
     ['settings', 'settings', 'Settings'],
     ['data', 'database', 'Backup & Data'],
   ];
@@ -108,7 +109,7 @@
     ({
       overview: tabOverview, students: tabStudents, groups: tabGroups,
       problems: tabProblems, solves: tabSolves, contests: tabContests,
-      achievements: tabAchievements, settings: tabSettings, data: tabData,
+      achievements: tabAchievements, requests: tabRequests, settings: tabSettings, data: tabData,
     })[tab](content);
     U.observeReveals(content);
   };
@@ -133,6 +134,7 @@
           <button class="btn btn-ghost btn-sm" data-go="problems" data-act="add">${ic('plus')}Add Problem</button>
           <button class="btn btn-ghost btn-sm" data-go="solves">${ic('check')}Record Solves</button>
           <button class="btn btn-ghost btn-sm" data-go="contests" data-act="add">${ic('trophy')}Record Contest</button>
+          <button class="btn btn-ghost btn-sm" data-go="requests">${ic('userPlus')}Join Requests${Store.newJoinCount() ? ` <span class="chip" style="margin-left:2px;color:var(--gold)">${Store.newJoinCount()} new</span>` : ''}</button>
           <button class="btn btn-ghost btn-sm" data-go="data">${ic('download')}Export Backup</button>
         </div>
       </div>
@@ -151,7 +153,7 @@
 
   function timeline(items, limit) {
     if (!items.length) return '<p class="muted">No activity yet.</p>';
-    const map = { solve: ['check', 'var(--green)'], contest: ['trophy', 'var(--gold)'], achievement: ['medal', 'var(--accent-2)'], student: ['userPlus', 'var(--accent)'], group: ['layers', 'var(--accent)'], problem: ['target', 'var(--orange)'], system: ['info', 'var(--dim)'] };
+    const map = { solve: ['check', 'var(--green)'], contest: ['trophy', 'var(--gold)'], achievement: ['medal', 'var(--accent-2)'], student: ['userPlus', 'var(--accent)'], group: ['layers', 'var(--accent)'], problem: ['target', 'var(--orange)'], request: ['userPlus', 'var(--accent-2)'], system: ['info', 'var(--dim)'] };
     return `<div class="timeline">${items.slice(0, limit).map((a) => {
       const [icon, col] = map[a.type] || map.system;
       return `<div class="tl-item" style="--c:${col}"><div class="tl-text">${U.esc(a.text)}</div><div class="tl-time">${U.timeAgo(a.t)}</div></div>`;
@@ -665,15 +667,21 @@
     const c = id ? Store.contest(id) : null;
     const students = Store.students();
     const pts = Store.settings().contestPoints;
+    const beyond = Number(Store.settings().contestPointsBeyond) || 0;
+    const award = (r) => (pts[r - 1] != null ? pts[r - 1] : beyond);
     const opt = (cur) => '<option value="">— empty —</option>' + students.map((s) => `<option value="${s.id}" ${cur === s.id ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('');
-    const rows = [1, 2, 3, 4, 5].map((r) => {
-      const ex = c ? c.results.find((x) => x.rank === r) : null;
-      return `<div class="field-row" style="align-items:center">
-        <label class="field" style="margin:0"><span>Rank #${r} · <b class="mono" style="color:var(--gold)">${pts[r - 1] != null ? pts[r - 1] : 0} pts</b></span>
-          <select class="select" name="rk-student" data-rank="${r}">${opt(ex ? ex.studentId : '')}</select></label>
+    const rowHTML = (r, ex) => `<div class="field-row rk-row" style="align-items:center">
+        <label class="field" style="margin:0"><span class="rk-label">Rank #${r} · <b class="mono" style="color:var(--gold)">${award(r)} pts</b></span>
+          <select class="select rk-student">${opt(ex ? ex.studentId : '')}</select></label>
         <label class="field" style="margin:0"><span>Problems solved</span>
-          <input class="input" type="number" min="0" name="rk-solved" data-rank="${r}" value="${ex ? ex.solved : ''}" placeholder="0"></label>
+          <input class="input rk-solved" type="number" min="0" value="${ex ? ex.solved : ''}" placeholder="0"></label>
+        <button type="button" class="icon-btn rk-del" title="Remove this rank" style="visibility:${r > 5 ? 'visible' : 'hidden'}">${ic('x')}</button>
       </div>`;
+    const n0 = c ? Math.max(5, c.results.length) : 5;
+    const rows = Array.from({ length: n0 }, (_, i) => {
+      const r = i + 1;
+      const ex = c ? c.results.find((x) => x.rank === r) : null;
+      return rowHTML(r, ex);
     }).join('');
 
     U.modal({
@@ -685,8 +693,10 @@
           <label class="field"><span>Date</span><input class="input" type="date" id="f-date" value="${c ? c.date : U.today()}"></label>
         </div>
         <label class="field"><span>Description</span><textarea class="input" id="f-desc" rows="2" placeholder="What was this contest about?">${c ? U.esc(c.description || '') : ''}</textarea></label>
-        <label class="field" style="margin-bottom:8px"><span>Top 5 — standings</span></label>
-        ${rows}`,
+        <label class="field" style="margin-bottom:8px"><span>Standings — in rank order <span class="muted tiny">(add as many ranks as you want)</span></span></label>
+        <div id="rk-rows">${rows}</div>
+        <button type="button" class="btn btn-ghost btn-sm" id="rk-add">${ic('plus')}Add rank</button>
+        <div class="muted tiny" style="margin-top:8px">Ranks #1–#${pts.length}: ${pts.join(' / ')} pts · every rank beyond: ${beyond} pts (changeable in Settings).</div>`,
       actions: [
         { label: 'Cancel', cls: 'btn-ghost' },
         {
@@ -694,9 +704,9 @@
           onClick: (ev, bd, closeFn) => {
             const name = U.$('#f-name', bd).value.trim();
             if (!name) { U.toast('Contest name is required', 'error'); return false; }
-            const picks = [1, 2, 3, 4, 5].map((r) => ({
-              studentId: U.$(`select[data-rank="${r}"]`, bd).value,
-              solved: U.$(`input[data-rank="${r}"]`, bd).value,
+            const picks = U.$$('.rk-row', bd).map((row) => ({
+              studentId: row.querySelector('.rk-student').value,
+              solved: row.querySelector('.rk-solved').value,
             }));
             const chosen = picks.map((p) => p.studentId).filter(Boolean);
             if (!chosen.length) { U.toast('Enter at least rank #1', 'error'); return false; }
@@ -711,6 +721,24 @@
           },
         },
       ],
+      mount: (bd) => {
+        const wrap = U.$('#rk-rows', bd);
+        const renumber = () => {
+          U.$$('.rk-row', wrap).forEach((row, i) => {
+            const r = i + 1;
+            row.querySelector('.rk-label').innerHTML = `Rank #${r} · <b class="mono" style="color:var(--gold)">${award(r)} pts</b>`;
+            row.querySelector('.rk-del').style.visibility = r > 5 ? 'visible' : 'hidden';
+          });
+        };
+        U.$('#rk-add', bd).onclick = () => {
+          wrap.insertAdjacentHTML('beforeend', rowHTML(wrap.children.length + 1, null));
+          renumber();
+        };
+        bd.addEventListener('click', (e) => {
+          const del = e.target.closest('.rk-del');
+          if (del) { del.closest('.rk-row').remove(); renumber(); }
+        });
+      },
     });
   }
 
@@ -858,6 +886,7 @@
         <label class="field" style="margin-top:4px"><span>Contest points per rank (Top 5)</span></label>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           ${S.contestPoints.map((p, i) => `<label class="field" style="margin:0;flex:1;min-width:90px"><span>#${i + 1}</span><input class="input" type="number" min="0" id="cp-${i}" value="${p}"></label>`).join('')}
+          <label class="field" style="margin:0;flex:1;min-width:120px"><span>#6 and below</span><input class="input" type="number" min="0" id="cp-beyond" value="${S.contestPointsBeyond != null ? S.contestPointsBeyond : 20}"></label>
         </div>
         <div style="height:14px"></div>
         <button class="btn btn-primary btn-sm" id="sc-save">${ic('save')}Save Scoring</button>
@@ -963,6 +992,7 @@
         difficultyScores: { easy: +U.$('#sc-easy', el).value || 0, medium: +U.$('#sc-medium', el).value || 0, hard: +U.$('#sc-hard', el).value || 0 },
         difficultyXP: { easy: +U.$('#xp-easy', el).value || 0, medium: +U.$('#xp-medium', el).value || 0, hard: +U.$('#xp-hard', el).value || 0 },
         contestPoints: [0, 1, 2, 3, 4].map((i) => +U.$('#cp-' + i, el).value || 0),
+        contestPointsBeyond: +U.$('#cp-beyond', el).value || 0,
       });
       U.toast('Scoring rules saved', 'success');
     };
@@ -1043,13 +1073,103 @@
     };
   }
 
+  /* ================= JOIN REQUESTS ================= */
+  function tabRequests(el) {
+    let fetched = false;
+    let fetchFailed = false;
+
+    const itemHTML = (r) => `
+      <div class="jr-item" data-cid="${r.cloudId || ''}" data-lid="${r.id || ''}">
+        ${U.avatarHTML({ name: r.name, photo: null }, 'avatar-44')}
+        <div class="jr-main">
+          <div class="jr-head">
+            <b>${U.esc(r.name)}</b>
+            <span class="jr-status ${r.status === 'new' ? 'new' : 'read'}">${r.status === 'new' ? 'New' : 'Read'}</span>
+            ${r.age != null ? `<span class="chip">Age ${r.age}</span>` : ''}
+            ${r.level ? `<span class="chip" title="Self-declared level">${U.esc(r.level)}</span>` : ''}
+            <span class="muted tiny">${U.timeAgo(r.createdAt)}</span>
+            ${!r.cloudId ? `<span class="chip" title="Saved in this browser only — not in the cloud">local</span>` : ''}
+          </div>
+          <a class="jr-mail" href="mailto:${U.esc(r.email)}">${U.esc(r.email)}</a>
+          ${r.description ? `<div class="jr-desc">${U.esc(r.description)}</div>` : ''}
+        </div>
+        <div class="jr-actions">
+          <button class="icon-btn jr-toggle" title="${r.status === 'new' ? 'Mark as read' : 'Mark as new'}">${ic(r.status === 'new' ? 'check' : 'refresh')}</button>
+          <button class="icon-btn jr-del" title="Delete" style="color:var(--red)">${ic('trash')}</button>
+        </div>
+      </div>`;
+
+    const renderList = () => {
+      const items = Store.joinRequests();
+      const cloud = Store.cloudEnabled && Store.cloudEnabled();
+      const authed = cloud && Store.cloudStatus().authed;
+      const showSetup = cloud && (!authed || fetchFailed);
+      el.innerHTML = `
+      <div class="card">
+        <div class="card-title">${ic('userPlus')}Join Requests <span class="chip" style="margin-left:auto">${Store.newJoinCount()} new</span>
+          <button class="btn btn-ghost btn-sm" id="jr-refresh" style="margin-left:8px">${ic('refresh')}Refresh</button></div>
+        <p class="muted tiny" style="margin:6px 0 14px">People who applied through the “Join the Academy” form on the home page.</p>
+        ${showSetup ? `<div class="card" style="background:var(--bg-2);margin-bottom:14px;border-color:color-mix(in srgb,var(--gold) 40%,var(--border))">
+            <b style="color:var(--gold)">${ic('warn')} Cloud inbox not active yet</b>
+            <p class="muted tiny" style="margin:8px 0 10px">${authed ? 'The join_requests table is missing (or has no policies).' : 'You are not signed into the cloud.'} Applications still reach <b>this browser</b>, but to receive them from any device, run this once in Supabase → SQL Editor:</p>
+            <pre class="jr-sql">${U.esc(Store.joinSQL())}</pre>
+            <button class="btn btn-ghost btn-sm" id="jr-copy" style="margin-top:10px">${ic('save')}Copy SQL</button>
+          </div>` : ''}
+        <div id="jr-list">
+          ${items.length ? items.map(itemHTML).join('') : '<p class="muted" style="padding:14px 4px">No join requests yet — share your home page link and they will start coming in.</p>'}
+        </div>
+      </div>`;
+
+      U.$('#jr-refresh', el).onclick = () => { fetched = false; fetchFailed = false; start(); };
+      const cp = U.$('#jr-copy', el);
+      if (cp) cp.onclick = () => {
+        const w = navigator.clipboard && navigator.clipboard.writeText(Store.joinSQL());
+        (w || Promise.reject()).then(
+          () => U.toast('SQL copied — paste it in the Supabase SQL Editor and press Run', 'success'),
+          () => U.toast('Copy failed — select the text and copy manually', 'error'));
+      };
+
+      U.$$('.jr-item', el).forEach((row) => {
+        const cid = row.dataset.cid || null, lid = row.dataset.lid || null;
+        const item = Store.joinRequests().find((x) => (cid && String(x.cloudId) === cid) || (lid && x.id === lid));
+        if (!item) return;
+        row.querySelector('.jr-toggle').onclick = async () => {
+          await Store.setJoinStatus(item, item.status === 'new' ? 'read' : 'new');
+          renderList();
+        };
+        row.querySelector('.jr-del').onclick = async () => {
+          const okDel = await U.confirm({ title: 'Delete join request', message: `Delete the application from <b>${U.esc(item.name)}</b> (${U.esc(item.email)})?`, danger: true, confirmLabel: 'Delete' });
+          if (!okDel) return;
+          await Store.deleteJoinRequest(item);
+          U.toast('Join request deleted', 'success');
+          renderList();
+        };
+      });
+    };
+
+    const start = async () => {
+      renderList();
+      if (fetched) return;
+      fetched = true;
+      if (Store.cloudEnabled && Store.cloudEnabled() && Store.cloudStatus().authed) {
+        const r = await Store.fetchJoinRequests();
+        if (r.ok) { fetchFailed = false; } else {
+          fetchFailed = true;
+          U.toast('Could not load requests from the cloud — check the setup note in this tab', 'error');
+        }
+        renderList();
+      }
+    };
+    start();
+  }
+
   /* ================= BACKUP & DATA ================= */
   function tabData(el) {
     const st = Store.academyStats();
     el.innerHTML = `
       <div class="card">
         <div class="card-title">${ic('database')}Backup &amp; Restore</div>
-        <p class="muted tiny" style="margin:6px 0 16px">${Store.cloudEnabled && Store.cloudEnabled() ? `Data syncs to the academy cloud. Status: <span class="chip" style="margin-left:6px">${Store.cloudStatus().authed ? '☁ signed in — edits go live instantly' : '☁ read-only (sign in to publish changes)'}</span>` : 'All academy data lives in this browser\'s Local Storage. Export regularly to keep it safe.'} <span class="chip" style="margin-left:6px">Build v1.2</span></p>
+        <p class="muted tiny" style="margin:6px 0 16px">${Store.cloudEnabled && Store.cloudEnabled() ? `Data syncs to the academy cloud. Status: <span class="chip" style="margin-left:6px">${Store.cloudStatus().authed ? '☁ signed in — edits go live instantly' : '☁ read-only (sign in to publish changes)'}</span>` : 'All academy data lives in this browser\'s Local Storage. Export regularly to keep it safe.'} <span class="chip" style="margin-left:6px">Build v1.3</span></p>
         <div style="display:flex;gap:14px;flex-wrap:wrap">
           <div class="card hoverable" style="flex:1;min-width:230px;background:var(--card-2)">
             <div class="st-ic">${ic('download')}</div>
