@@ -7,7 +7,7 @@
   const TITLES = {
     home: 'Home', students: 'Students', student: 'Student Profile', groups: 'Groups', group: 'Group',
     leaderboard: 'Leaderboard', problems: 'Problem Library', contests: 'Hall of Fame',
-    analytics: 'Analytics', achievements: 'Achievements', admin: 'Admin Panel',
+    analytics: 'Analytics', achievements: 'Achievements', join: 'Join the Academy', admin: 'Admin Panel',
   };
 
   /* ---------------- theme ---------------- */
@@ -45,6 +45,7 @@
     if ((mm = h.match(/^\/contests$/))) return { name: 'contests' };
     if ((mm = h.match(/^\/analytics$/))) return { name: 'analytics' };
     if ((mm = h.match(/^\/achievements$/))) return { name: 'achievements' };
+    if ((mm = h.match(/^\/join$/))) return { name: 'join' };
     return { name: '404' };
   }
 
@@ -74,6 +75,7 @@
       case 'contests': PublicViews.contests(root); break;
       case 'analytics': PublicViews.analytics(root); break;
       case 'achievements': PublicViews.achievements(root); break;
+      case 'join': PublicViews.join(root); break;
       case 'admin': Admin.render(root, r.param); break;
       default: PublicViews.notFound(root);
     }
