@@ -80,7 +80,7 @@
       createdAt: new Date().toISOString(),
       settings: defaultSettings(),
       students: [], groups: [], problems: [], contests: [],
-      catalog: [], activity: [], joinRequests: [],
+      catalog: [], activity: [], joinRequests: [], questions: [],
     };
   }
 
@@ -100,6 +100,7 @@
     if (!isFinite(Number(S.contestPointsBeyond))) S.contestPointsBeyond = 20;
     S.contestPointsBeyond = num(S.contestPointsBeyond, 20);
     if (!Array.isArray(data.joinRequests)) data.joinRequests = [];
+    if (!Array.isArray(data.questions)) data.questions = [];
     (data.problems || []).forEach((p) => { p.score = num(p.score); p.xp = num(p.xp); });
     (data.contests || []).forEach((c) => (c.results || []).forEach((r) => {
       r.points = num(r.points); r.solved = Math.max(0, num(r.solved)); r.rank = num(r.rank);
@@ -423,13 +424,15 @@
       if (res.error) throw res.error;
       if (res.data && cloudLooksValid(res.data.data)) {
         const fresh = normalizeDB(JSON.parse(JSON.stringify(res.data.data)));
-        // Never lose applications that live ONLY in this browser (they were
-        // submitted while the cloud table was missing / unreachable): carry
+        // Never lose applications/questions that live ONLY in this browser
+        // (submitted while the cloud table was missing / unreachable): carry
         // them over the cloud replacement, deduped against the fresh copy.
-        const localOnly = (db && db.joinRequests ? db.joinRequests : []).filter((x) => !x.cloudId);
-        if (localOnly.length) {
-          fresh.joinRequests = fresh.joinRequests.filter((x) => !localOnly.some((l) => l.id && l.id === x.id)).concat(localOnly);
-        }
+        ['joinRequests', 'questions'].forEach((key) => {
+          const localOnly = (db && db[key] ? db[key] : []).filter((x) => !x.cloudId);
+          if (localOnly.length) {
+            fresh[key] = fresh[key].filter((x) => !localOnly.some((l) => l.id && l.id === x.id)).concat(localOnly);
+          }
+        });
         db = fresh;
         Cloud.empty = false; Cloud.synced = true;
         try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
@@ -1185,6 +1188,98 @@ create policy "coach deletes" on public.join_requests for delete using (auth.rol
     }
     db.joinRequests = db.joinRequests.filter((x) => x !== item && !(item.cloudId && x.cloudId === item.cloudId) && !(item.id && x.id === item.id));
     Store.log('request', `Join request from ${item.name} was removed`);
+    Store.save();
+  };
+
+  /* ---------------- questions (public "ask the coach" form) ----------------
+     Same security model as join requests: anyone may ASK (anon insert),
+     only the signed-in coach may read / mark-read / delete. */
+  const QUESTION_SQL_SNIPPET =
+`create table public.questions (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  name text not null, age integer, email text not null,
+  level text, question text not null, status text not null default 'new'
+);
+alter table public.questions enable row level security;
+create policy "anyone can ask" on public.questions for insert with check (true);
+create policy "coach reads questions" on public.questions for select using (auth.role() = 'authenticated');
+create policy "coach updates questions" on public.questions for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "coach deletes questions" on public.questions for delete using (auth.role() = 'authenticated');`;
+  Store.questionsSQL = () => QUESTION_SQL_SNIPPET;
+
+  Store.questions = () => db.questions;
+  Store.newQuestionCount = () => db.questions.filter((r) => r.status === 'new').length;
+
+  Store.addQuestion = async function (req) {
+    const clean = (v, n) => String(v || '').replace(/[<>]/g, '').trim().slice(0, n);
+    const age = parseInt(req.age, 10);
+    const q = {
+      name: clean(req.name, 60), email: clean(req.email, 90),
+      age: isFinite(age) ? Math.max(4, Math.min(120, age)) : null,
+      level: clean(req.level, 120), question: clean(req.question, 800),
+      status: 'new', createdAt: new Date().toISOString(),
+    };
+    if (!q.name || !q.email || !q.question) return { ok: false, error: 'missing-fields' };
+    Store.log('question', `Question from ${q.name}`);
+    const client = cloudClient();
+    if (client) { // anonymous insert allowed by RLS policy — no auth needed
+      try {
+        const res = await client.from('questions').insert({
+          name: q.name, age: q.age, email: q.email, level: q.level, question: q.question, status: 'new',
+        });
+        if (res.error) throw res.error;
+        Store.save();
+        return { ok: true, where: 'cloud' };
+      } catch (e) { /* table missing or offline -> local fallback below */ }
+    }
+    q.id = uid('q');
+    db.questions.unshift(q);
+    Store.save();
+    return { ok: true, where: 'local' };
+  };
+
+  // coach-only: pull questions from the cloud into the local cache
+  Store.fetchQuestions = async function () {
+    const client = cloudClient();
+    if (!client || !Cloud.authed) return { ok: false, reason: 'not-authed' };
+    try {
+      const res = await client.from('questions').select('*').order('created_at', { ascending: false }).limit(200);
+      if (res.error) throw res.error;
+      const localOnly = db.questions.filter((x) => !x.cloudId);
+      db.questions = (res.data || []).map((r) => ({
+        cloudId: r.id, name: r.name, age: r.age, email: r.email,
+        level: r.level || '', question: r.question || '',
+        status: r.status || 'new', createdAt: r.created_at,
+      })).concat(localOnly);
+      Store.save();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: 'fetch-failed', error: String(e && e.message || e), code: e && e.code };
+    }
+  };
+
+  Store.setQuestionStatus = async function (item, status) {
+    if (item.cloudId && cloudClient() && Cloud.authed) {
+      try {
+        const res = await cloudClient().from('questions').update({ status }).eq('id', item.cloudId);
+        if (res.error) throw res.error;
+      } catch (e) { /* keep local change anyway */ }
+    }
+    const local = db.questions.find((x) => x === item || (item.cloudId && x.cloudId === item.cloudId) || (item.id && x.id === item.id));
+    if (local) local.status = status;
+    Store.save();
+  };
+
+  Store.deleteQuestion = async function (item) {
+    if (item.cloudId && cloudClient() && Cloud.authed) {
+      try {
+        const res = await cloudClient().from('questions').delete().eq('id', item.cloudId);
+        if (res.error) throw res.error;
+      } catch (e) { /* keep going */ }
+    }
+    db.questions = db.questions.filter((x) => x !== item && !(item.cloudId && x.cloudId === item.cloudId) && !(item.id && x.id === item.id));
+    Store.log('question', `Question from ${item.name} was removed`);
     Store.save();
   };
 
