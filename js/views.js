@@ -169,7 +169,58 @@
       <section class="ladder reveal">
         ${sb.levels.map((l, i) => `<div class="ladder-step" style="--lc:${l.color}"><b>${U.esc(l.name)}</b><span>${U.fmtNum(l.minScore)}+ pts${l.minTopics ? ' · ' + l.minTopics + ' topics' : ''}</span></div>`).join('')}
       </section>
+
+      <div class="section-head reveal"><div><h2>${ic('userPlus')}Join the Academy</h2><div class="sub">Want to train with us? Send an application — the coach reads every single one</div></div></div>
+      <section class="grid grid-2 join-grid">
+        <div class="card join-pitch reveal">
+          <div class="jp-badge">${ic('grad')}</div>
+          <h3>Think you've got what it takes?</h3>
+          <p class="muted">Whether you're writing your first <span class="mono">if</span> statement or grinding for the national team — there's a seat (and a leaderboard) waiting for you.</p>
+          <ul class="jp-list">
+            <li>${ic('check')}Structured training in real groups — from Rookies to Elite</li>
+            <li>${ic('check')}Weekly problems, timed contests and a live leaderboard</li>
+            <li>${ic('check')}Topic mastery, levels and achievements to chase</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <div class="card-title">${ic('userPlus')}Apply now</div>
+          <form id="join-form" style="margin-top:14px">
+            <div class="field-row">
+              <label class="field"><span>Your name *</span><input class="input" id="jf-name" maxlength="60" placeholder="e.g. Amine Ben Salah"></label>
+              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="jf-age" type="number" min="4" max="120" placeholder="14"></label>
+            </div>
+            <label class="field"><span>Email *</span><input class="input" id="jf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
+            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="jf-level" maxlength="120" placeholder="e.g. Beginner in C++ — solved ~50 easy problems"></label>
+            <label class="field"><span>Anything else? <span class="muted tiny">(optional)</span></span><textarea class="input" id="jf-desc" rows="3" maxlength="600" placeholder="Why do you want to join? Experience, contests, goals…"></textarea></label>
+            <input type="text" id="jf-web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="join-done hidden" id="join-done">${ic('check')}<span>Application sent! The coach reviews every request and will reach out by email.</span></div>
+            <button class="btn btn-primary btn-block" type="submit">${ic('arrowRight')}Send application</button>
+          </form>
+        </div>
+      </section>
     </div>`;
+
+    const jf = U.$('#join-form', root);
+    if (jf) jf.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (U.$('#jf-web', root).value) { jf.reset(); return; } // honeypot — silently drop bots
+      const name = U.$('#jf-name', root).value.trim();
+      const email = U.$('#jf-email', root).value.trim();
+      if (!name) return U.toast('Your name is required', 'error');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return U.toast('Please enter a valid email address', 'error');
+      const btn = jf.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      const r = await Store.addJoinRequest({
+        name, email, age: U.$('#jf-age', root).value,
+        level: U.$('#jf-level', root).value, description: U.$('#jf-desc', root).value,
+      });
+      if (btn) btn.disabled = false;
+      if (!r.ok) return U.toast('Something went wrong — please try again in a moment', 'error');
+      jf.reset();
+      U.$('#join-done', root).classList.remove('hidden');
+      U.toast('Application sent — the coach will reach out soon!', 'success', 'userPlus');
+      if (U.confetti) U.confetti();
+    });
 
     function coachCard() {
       // always rendered — empty fields fall back to sensible placeholders
