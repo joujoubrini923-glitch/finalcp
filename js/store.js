@@ -32,7 +32,8 @@
       passwordChanged: false,
       difficultyScores: { easy: 10, medium: 30, hard: 60 },
       difficultyXP: { easy: 1, medium: 3, hard: 6 },
-      contestPoints: [150, 120, 100, 80, 60], // rank 1..5
+      contestPoints: [150, 120, 100, 80, 60],
+      contestPointsBeyond: 20, // points for every rank below the Top 5 // rank 1..5
       levels: [
         { name: 'Newcomer', minScore: 0, minTopics: 0, minAchievements: 0, color: '#9e9e9e' },
         { name: 'Learner', minScore: 80, minTopics: 1, minAchievements: 0, color: '#4caf50' },
@@ -79,7 +80,7 @@
       createdAt: new Date().toISOString(),
       settings: defaultSettings(),
       students: [], groups: [], problems: [], contests: [],
-      catalog: [], activity: [],
+      catalog: [], activity: [], joinRequests: [],
     };
   }
 
@@ -96,6 +97,9 @@
     S.difficultyScores = numMap(S.difficultyScores, ['easy', 'medium', 'hard']);
     S.difficultyXP = numMap(S.difficultyXP, ['easy', 'medium', 'hard']);
     S.contestPoints = (Array.isArray(S.contestPoints) ? S.contestPoints : [150, 120, 100, 80, 60]).map((v) => num(v));
+    if (!isFinite(Number(S.contestPointsBeyond))) S.contestPointsBeyond = 20;
+    S.contestPointsBeyond = num(S.contestPointsBeyond, 20);
+    if (!Array.isArray(data.joinRequests)) data.joinRequests = [];
     (data.problems || []).forEach((p) => { p.score = num(p.score); p.xp = num(p.xp); });
     (data.contests || []).forEach((c) => (c.results || []).forEach((r) => {
       r.points = num(r.points); r.solved = Math.max(0, num(r.solved)); r.rank = num(r.rank);
@@ -418,7 +422,15 @@
       const res = await client.from(CLOUD_TABLE).select('id,data').eq('id', CLOUD_ROW_ID).maybeSingle();
       if (res.error) throw res.error;
       if (res.data && cloudLooksValid(res.data.data)) {
-        db = normalizeDB(JSON.parse(JSON.stringify(res.data.data)));
+        const fresh = normalizeDB(JSON.parse(JSON.stringify(res.data.data)));
+        // Never lose applications that live ONLY in this browser (they were
+        // submitted while the cloud table was missing / unreachable): carry
+        // them over the cloud replacement, deduped against the fresh copy.
+        const localOnly = (db && db.joinRequests ? db.joinRequests : []).filter((x) => !x.cloudId);
+        if (localOnly.length) {
+          fresh.joinRequests = fresh.joinRequests.filter((x) => !localOnly.some((l) => l.id && l.id === x.id)).concat(localOnly);
+        }
+        db = fresh;
         Cloud.empty = false; Cloud.synced = true;
         try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {}
         done(true);
@@ -974,12 +986,13 @@
   /* ----- contests ----- */
   function bakeResults(entries) {
     // entries: [{studentId, solved}] in rank order -> attach rank & points
+    const beyond = Number(db.settings.contestPointsBeyond) || 0;
     return entries
       .filter((e) => e.studentId)
       .map((e, i) => ({
         studentId: e.studentId, rank: i + 1,
         solved: Math.max(0, Number(e.solved) || 0),
-        points: db.settings.contestPoints[i] != null ? Number(db.settings.contestPoints[i]) : 0,
+        points: db.settings.contestPoints[i] != null ? Number(db.settings.contestPoints[i]) : beyond,
       }));
   }
   Store.addContest = function (data) {
@@ -1083,6 +1096,98 @@
   };
 
   /* ----- backup / reset ----- */
+  /* ---------------- join requests (public application form) ----------------
+     Anyone may SUBMIT (cloud policy: anon insert). Only the signed-in coach
+     may READ/UPDATE/DELETE. Without Supabase they stay local to this browser. */
+  const JOIN_SQL_SNIPPET =
+`create table public.join_requests (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  name text not null, age integer, email text not null,
+  level text, description text, status text not null default 'new'
+);
+alter table public.join_requests enable row level security;
+create policy "anyone can apply" on public.join_requests for insert with check (true);
+create policy "coach reads" on public.join_requests for select using (auth.role() = 'authenticated');
+create policy "coach updates" on public.join_requests for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "coach deletes" on public.join_requests for delete using (auth.role() = 'authenticated');`;
+  Store.joinSQL = () => JOIN_SQL_SNIPPET;
+
+  Store.joinRequests = () => db.joinRequests;
+  Store.newJoinCount = () => db.joinRequests.filter((r) => r.status === 'new').length;
+
+  Store.addJoinRequest = async function (req) {
+    const clean = (v, n) => String(v || '').replace(/[<>]/g, '').trim().slice(0, n);
+    const age = parseInt(req.age, 10);
+    const jr = {
+      name: clean(req.name, 60), email: clean(req.email, 90),
+      age: isFinite(age) ? Math.max(4, Math.min(120, age)) : null,
+      level: clean(req.level, 120), description: clean(req.description, 600),
+      status: 'new', createdAt: new Date().toISOString(),
+    };
+    if (!jr.name || !jr.email) return { ok: false, error: 'missing-fields' };
+    Store.log('request', `Join request from ${jr.name}`);
+    const client = cloudClient();
+    if (client) { // anonymous insert allowed by RLS policy — no auth needed
+      try {
+        const res = await client.from('join_requests').insert({
+          name: jr.name, age: jr.age, email: jr.email, level: jr.level, description: jr.description, status: 'new',
+        });
+        if (res.error) throw res.error;
+        Store.save();
+        return { ok: true, where: 'cloud' };
+      } catch (e) { /* table missing or offline -> local fallback below */ }
+    }
+    jr.id = uid('jr');
+    db.joinRequests.unshift(jr);
+    Store.save();
+    return { ok: true, where: 'local' };
+  };
+
+  // coach-only: pull applications from the cloud into the local cache
+  Store.fetchJoinRequests = async function () {
+    const client = cloudClient();
+    if (!client || !Cloud.authed) return { ok: false, reason: 'not-authed' };
+    try {
+      const res = await client.from('join_requests').select('*').order('created_at', { ascending: false }).limit(200);
+      if (res.error) throw res.error;
+      const localOnly = db.joinRequests.filter((x) => !x.cloudId);
+      db.joinRequests = (res.data || []).map((r) => ({
+        cloudId: r.id, name: r.name, age: r.age, email: r.email,
+        level: r.level || '', description: r.description || '',
+        status: r.status || 'new', createdAt: r.created_at,
+      })).concat(localOnly);
+      Store.save();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: 'fetch-failed', error: String(e && e.message || e), code: e && e.code };
+    }
+  };
+
+  Store.setJoinStatus = async function (item, status) {
+    if (item.cloudId && cloudClient() && Cloud.authed) {
+      try {
+        const res = await cloudClient().from('join_requests').update({ status }).eq('id', item.cloudId);
+        if (res.error) throw res.error;
+      } catch (e) { /* keep local change anyway */ }
+    }
+    const local = db.joinRequests.find((x) => x === item || (item.cloudId && x.cloudId === item.cloudId) || (item.id && x.id === item.id));
+    if (local) local.status = status;
+    Store.save();
+  };
+
+  Store.deleteJoinRequest = async function (item) {
+    if (item.cloudId && cloudClient() && Cloud.authed) {
+      try {
+        const res = await cloudClient().from('join_requests').delete().eq('id', item.cloudId);
+        if (res.error) throw res.error;
+      } catch (e) { /* keep going */ }
+    }
+    db.joinRequests = db.joinRequests.filter((x) => x !== item && !(item.cloudId && x.cloudId === item.cloudId) && !(item.id && x.id === item.id));
+    Store.log('request', `Join request from ${item.name} was removed`);
+    Store.save();
+  };
+
   Store.exportJSON = function () {
     return JSON.stringify({ app: 'abdelmajid-cp', version: VER, exportedAt: new Date().toISOString(), data: db }, null, 2);
   };
