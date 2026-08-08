@@ -134,7 +134,7 @@
           <button class="btn btn-ghost btn-sm" data-go="problems" data-act="add">${ic('plus')}Add Problem</button>
           <button class="btn btn-ghost btn-sm" data-go="solves">${ic('check')}Record Solves</button>
           <button class="btn btn-ghost btn-sm" data-go="contests" data-act="add">${ic('trophy')}Record Contest</button>
-          <button class="btn btn-ghost btn-sm" data-go="requests">${ic('userPlus')}Join Requests${Store.newJoinCount() ? ` <span class="chip" style="margin-left:2px;color:var(--gold)">${Store.newJoinCount()} new</span>` : ''}</button>
+          <button class="btn btn-ghost btn-sm" data-go="requests">${ic('userPlus')}Join Requests &amp; Questions${(Store.newJoinCount() + Store.newQuestionCount()) ? ` <span class="chip" style="margin-left:2px;color:var(--gold)">${Store.newJoinCount() + Store.newQuestionCount()} new</span>` : ''}</button>
           <button class="btn btn-ghost btn-sm" data-go="data">${ic('download')}Export Backup</button>
         </div>
       </div>
@@ -153,7 +153,7 @@
 
   function timeline(items, limit) {
     if (!items.length) return '<p class="muted">No activity yet.</p>';
-    const map = { solve: ['check', 'var(--green)'], contest: ['trophy', 'var(--gold)'], achievement: ['medal', 'var(--accent-2)'], student: ['userPlus', 'var(--accent)'], group: ['layers', 'var(--accent)'], problem: ['target', 'var(--orange)'], request: ['userPlus', 'var(--accent-2)'], system: ['info', 'var(--dim)'] };
+    const map = { solve: ['check', 'var(--green)'], contest: ['trophy', 'var(--gold)'], achievement: ['medal', 'var(--accent-2)'], student: ['userPlus', 'var(--accent)'], group: ['layers', 'var(--accent)'], problem: ['target', 'var(--orange)'], request: ['userPlus', 'var(--accent-2)'], question: ['help', 'var(--orange)'], system: ['info', 'var(--dim)'] };
     return `<div class="timeline">${items.slice(0, limit).map((a) => {
       const [icon, col] = map[a.type] || map.system;
       return `<div class="tl-item" style="--c:${col}"><div class="tl-text">${U.esc(a.text)}</div><div class="tl-time">${U.timeAgo(a.t)}</div></div>`;
@@ -1076,10 +1076,10 @@
   /* ================= JOIN REQUESTS ================= */
   function tabRequests(el) {
     let fetched = false;
-    let fetchFailed = false;
+    const fetchFailed = { join: false, q: false };
 
-    const itemHTML = (r) => `
-      <div class="jr-item" data-cid="${r.cloudId || ''}" data-lid="${r.id || ''}">
+    const itemHTML = (r, kind) => `
+      <div class="jr-item" data-kind="${kind}" data-cid="${r.cloudId || ''}" data-lid="${r.id || ''}">
         ${U.avatarHTML({ name: r.name, photo: null }, 'avatar-44')}
         <div class="jr-main">
           <div class="jr-head">
@@ -1091,7 +1091,9 @@
             ${!r.cloudId ? `<span class="chip" title="Saved in this browser only — not in the cloud">local</span>` : ''}
           </div>
           <a class="jr-mail" href="mailto:${U.esc(r.email)}">${U.esc(r.email)}</a>
-          ${r.description ? `<div class="jr-desc">${U.esc(r.description)}</div>` : ''}
+          ${kind === 'q'
+            ? `<div class="jr-desc"><span class="jr-q-mark">?</span>${U.esc(r.question)}</div>`
+            : (r.description ? `<div class="jr-desc">${U.esc(r.description)}</div>` : '')}
         </div>
         <div class="jr-actions">
           <button class="icon-btn jr-toggle" title="${r.status === 'new' ? 'Mark as read' : 'Mark as new'}">${ic(r.status === 'new' ? 'check' : 'refresh')}</button>
@@ -1099,31 +1101,50 @@
         </div>
       </div>`;
 
-    const renderList = () => {
-      const items = Store.joinRequests();
+    const fetchState = () => {
       const cloud = Store.cloudEnabled && Store.cloudEnabled();
       const authed = cloud && Store.cloudStatus().authed;
-      const showSetup = cloud && (!authed || fetchFailed);
+      return { cloud, authed, showSetup: cloud && (!authed || fetchFailed.join || fetchFailed.q) };
+    };
+    const setupSQL = () => {
+      const parts = [];
+      if (fetchFailed.join || !(fetchFailed.join || fetchFailed.q)) parts.push(Store.joinSQL());
+      if (fetchFailed.q || !(fetchFailed.join || fetchFailed.q)) parts.push(Store.questionsSQL());
+      return parts.join('\n\n');
+    };
+
+    const renderList = () => {
+      const apps = Store.joinRequests();
+      const qs = Store.questions();
+      const { cloud, authed, showSetup } = fetchState();
+      const missing = fetchFailed.join && fetchFailed.q ? 'join_requests and questions tables' : (fetchFailed.q ? 'questions table' : 'join_requests table');
       el.innerHTML = `
       <div class="card">
         <div class="card-title">${ic('userPlus')}Join Requests <span class="chip" style="margin-left:auto">${Store.newJoinCount()} new</span>
           <button class="btn btn-ghost btn-sm" id="jr-refresh" style="margin-left:8px">${ic('refresh')}Refresh</button></div>
-        <p class="muted tiny" style="margin:6px 0 14px">People who applied through the “Join the Academy” form on the home page.</p>
+        <p class="muted tiny" style="margin:6px 0 14px">People who applied through the “Join the Academy” page.</p>
         ${showSetup ? `<div class="card" style="background:var(--bg-2);margin-bottom:14px;border-color:color-mix(in srgb,var(--gold) 40%,var(--border))">
             <b style="color:var(--gold)">${ic('warn')} Cloud inbox not active yet</b>
-            <p class="muted tiny" style="margin:8px 0 10px">${authed ? 'The join_requests table is missing (or has no policies).' : 'You are not signed into the cloud.'} Applications still reach <b>this browser</b>, but to receive them from any device, run this once in Supabase → SQL Editor:</p>
-            <pre class="jr-sql">${U.esc(Store.joinSQL())}</pre>
+            <p class="muted tiny" style="margin:8px 0 10px">${authed ? `The ${missing} is missing (or has no policies).` : 'You are not signed into the cloud.'} Messages still reach <b>this browser</b>, but to receive them from any device, run this once in Supabase → SQL Editor:</p>
+            <pre class="jr-sql">${U.esc(setupSQL())}</pre>
             <button class="btn btn-ghost btn-sm" id="jr-copy" style="margin-top:10px">${ic('save')}Copy SQL</button>
           </div>` : ''}
         <div id="jr-list">
-          ${items.length ? items.map(itemHTML).join('') : '<p class="muted" style="padding:14px 4px">No join requests yet — share your home page link and they will start coming in.</p>'}
+          ${apps.length ? apps.map((r) => itemHTML(r, 'join')).join('') : '<p class="muted" style="padding:14px 4px">No join requests yet — share your Join page link and they will start coming in.</p>'}
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <div class="card-title">${ic('help')}Questions <span class="chip" style="margin-left:auto">${Store.newQuestionCount()} new</span></div>
+        <p class="muted tiny" style="margin:6px 0 14px">Asked through the “Just have a question?” form on the Join page — these people are <b>not</b> applying to the academy.</p>
+        <div id="q-list">
+          ${qs.length ? qs.map((r) => itemHTML(r, 'q')).join('') : '<p class="muted" style="padding:14px 4px">No questions yet.</p>'}
         </div>
       </div>`;
 
-      U.$('#jr-refresh', el).onclick = () => { fetched = false; fetchFailed = false; start(); };
+      U.$('#jr-refresh', el).onclick = () => { fetched = false; fetchFailed.join = false; fetchFailed.q = false; start(); };
       const cp = U.$('#jr-copy', el);
       if (cp) cp.onclick = () => {
-        const w = navigator.clipboard && navigator.clipboard.writeText(Store.joinSQL());
+        const w = navigator.clipboard && navigator.clipboard.writeText(setupSQL());
         (w || Promise.reject()).then(
           () => U.toast('SQL copied — paste it in the Supabase SQL Editor and press Run', 'success'),
           () => U.toast('Copy failed — select the text and copy manually', 'error'));
@@ -1131,17 +1152,23 @@
 
       U.$$('.jr-item', el).forEach((row) => {
         const cid = row.dataset.cid || null, lid = row.dataset.lid || null;
-        const item = Store.joinRequests().find((x) => (cid && String(x.cloudId) === cid) || (lid && x.id === lid));
+        const isQ = row.dataset.kind === 'q';
+        const list = isQ ? Store.questions() : Store.joinRequests();
+        const item = list.find((x) => (cid && String(x.cloudId) === cid) || (lid && x.id === lid));
         if (!item) return;
         row.querySelector('.jr-toggle').onclick = async () => {
-          await Store.setJoinStatus(item, item.status === 'new' ? 'read' : 'new');
+          await (isQ ? Store.setQuestionStatus : Store.setJoinStatus)(item, item.status === 'new' ? 'read' : 'new');
           renderList();
         };
         row.querySelector('.jr-del').onclick = async () => {
-          const okDel = await U.confirm({ title: 'Delete join request', message: `Delete the application from <b>${U.esc(item.name)}</b> (${U.esc(item.email)})?`, danger: true, confirmLabel: 'Delete' });
+          const okDel = await U.confirm({
+            title: isQ ? 'Delete question' : 'Delete join request',
+            message: `Delete the ${isQ ? 'question' : 'application'} from <b>${U.esc(item.name)}</b> (${U.esc(item.email)})?`,
+            danger: true, confirmLabel: 'Delete',
+          });
           if (!okDel) return;
-          await Store.deleteJoinRequest(item);
-          U.toast('Join request deleted', 'success');
+          await (isQ ? Store.deleteQuestion : Store.deleteJoinRequest)(item);
+          U.toast(isQ ? 'Question deleted' : 'Join request deleted', 'success');
           renderList();
         };
       });
@@ -1152,11 +1179,10 @@
       if (fetched) return;
       fetched = true;
       if (Store.cloudEnabled && Store.cloudEnabled() && Store.cloudStatus().authed) {
-        const r = await Store.fetchJoinRequests();
-        if (r.ok) { fetchFailed = false; } else {
-          fetchFailed = true;
-          U.toast('Could not load requests from the cloud — check the setup note in this tab', 'error');
-        }
+        const [r1, r2] = await Promise.all([Store.fetchJoinRequests(), Store.fetchQuestions()]);
+        fetchFailed.join = !r1.ok;
+        fetchFailed.q = !r2.ok;
+        if (fetchFailed.join || fetchFailed.q) U.toast('Could not load everything from the cloud — check the setup note in this tab', 'error');
         renderList();
       }
     };
@@ -1169,7 +1195,7 @@
     el.innerHTML = `
       <div class="card">
         <div class="card-title">${ic('database')}Backup &amp; Restore</div>
-        <p class="muted tiny" style="margin:6px 0 16px">${Store.cloudEnabled && Store.cloudEnabled() ? `Data syncs to the academy cloud. Status: <span class="chip" style="margin-left:6px">${Store.cloudStatus().authed ? '☁ signed in — edits go live instantly' : '☁ read-only (sign in to publish changes)'}</span>` : 'All academy data lives in this browser\'s Local Storage. Export regularly to keep it safe.'} <span class="chip" style="margin-left:6px">Build v1.3</span></p>
+        <p class="muted tiny" style="margin:6px 0 16px">${Store.cloudEnabled && Store.cloudEnabled() ? `Data syncs to the academy cloud. Status: <span class="chip" style="margin-left:6px">${Store.cloudStatus().authed ? '☁ signed in — edits go live instantly' : '☁ read-only (sign in to publish changes)'}</span>` : 'All academy data lives in this browser\'s Local Storage. Export regularly to keep it safe.'} <span class="chip" style="margin-left:6px">Build v1.4</span></p>
         <div style="display:flex;gap:14px;flex-wrap:wrap">
           <div class="card hoverable" style="flex:1;min-width:230px;background:var(--card-2)">
             <div class="st-ic">${ic('download')}</div>
