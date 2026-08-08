@@ -141,6 +141,15 @@
         </div>
       </section>
 
+      <section class="join-cta reveal" id="join-cta">
+        <div class="jc-copy">
+          <span class="jc-eyebrow"><i class="dot"></i>NEW MEMBERS WELCOME</span>
+          <h2>Think you can climb this leaderboard? <span class="grad">Join the academy.</span></h2>
+          <p class="muted">Send an application in 30 seconds — the coach reads every single one. Just curious? You can also ask a question, no commitment.</p>
+        </div>
+        <a class="btn btn-primary btn-jumbo" href="#/join">${ic('userPlus')}Join the Academy${ic('arrowRight')}</a>
+      </section>
+
       ${coachCard()}
 
       <section class="stats-row">
@@ -169,58 +178,7 @@
       <section class="ladder reveal">
         ${sb.levels.map((l, i) => `<div class="ladder-step" style="--lc:${l.color}"><b>${U.esc(l.name)}</b><span>${U.fmtNum(l.minScore)}+ pts${l.minTopics ? ' · ' + l.minTopics + ' topics' : ''}</span></div>`).join('')}
       </section>
-
-      <div class="section-head reveal"><div><h2>${ic('userPlus')}Join the Academy</h2><div class="sub">Want to train with us? Send an application — the coach reads every single one</div></div></div>
-      <section class="grid grid-2 join-grid">
-        <div class="card join-pitch reveal">
-          <div class="jp-badge">${ic('grad')}</div>
-          <h3>Think you've got what it takes?</h3>
-          <p class="muted">Whether you're writing your first <span class="mono">if</span> statement or grinding for the national team — there's a seat (and a leaderboard) waiting for you.</p>
-          <ul class="jp-list">
-            <li>${ic('check')}Structured training in real groups — from beginner to advanced</li>
-            <li>${ic('check')}Weekly problems, timed contests and a live leaderboard</li>
-            <li>${ic('check')}Topic mastery and competitions to participate in</li>
-          </ul>
-        </div>
-        <div class="card reveal">
-          <div class="card-title">${ic('userPlus')}Apply now</div>
-          <form id="join-form" style="margin-top:14px">
-            <div class="field-row">
-              <label class="field"><span>Your name *</span><input class="input" id="jf-name" maxlength="60" placeholder=""></label>
-              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="jf-age" type="number" min="4" max="120" placeholder="16"></label>
-            </div>
-            <label class="field"><span>Email *</span><input class="input" id="jf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
-            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="jf-level" maxlength="120" placeholder="e.g. new to coding"></label>
-            <label class="field"><span>Anything else? <span class="muted tiny">(optional)</span></span><textarea class="input" id="jf-desc" rows="3" maxlength="600" placeholder="Why do you want to join? Experience, contests, goals…"></textarea></label>
-            <input type="text" id="jf-web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <div class="join-done hidden" id="join-done">${ic('check')}<span>Application sent! The coach reviews every request and will reach out by email.</span></div>
-            <button class="btn btn-primary btn-block" type="submit">${ic('arrowRight')}Send application</button>
-          </form>
-        </div>
-      </section>
     </div>`;
-
-    const jf = U.$('#join-form', root);
-    if (jf) jf.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (U.$('#jf-web', root).value) { jf.reset(); return; } // honeypot — silently drop bots
-      const name = U.$('#jf-name', root).value.trim();
-      const email = U.$('#jf-email', root).value.trim();
-      if (!name) return U.toast('Your name is required', 'error');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return U.toast('Please enter a valid email address', 'error');
-      const btn = jf.querySelector('button[type="submit"]');
-      if (btn) btn.disabled = true;
-      const r = await Store.addJoinRequest({
-        name, email, age: U.$('#jf-age', root).value,
-        level: U.$('#jf-level', root).value, description: U.$('#jf-desc', root).value,
-      });
-      if (btn) btn.disabled = false;
-      if (!r.ok) return U.toast('Something went wrong — please try again in a moment', 'error');
-      jf.reset();
-      U.$('#join-done', root).classList.remove('hidden');
-      U.toast('Application sent — the coach will reach out soon!', 'success', 'userPlus');
-      if (U.confetti) U.confetti();
-    });
 
     function coachCard() {
       // always rendered — empty fields fall back to sensible placeholders
@@ -259,6 +217,115 @@
         ${e.length === 3 ? C.podiumHTML(e, 'pts') : ''}
         <div style="margin-top:16px;text-align:center"><a class="btn btn-ghost btn-sm" href="#/contests">${ic('trophy')}All contests</a></div>`;
     }
+  };
+
+  /* ============================================================ JOIN + ASK */
+  PV.join = (root) => {
+    root.innerHTML = `
+    <div class="container page">
+      <div class="page-head reveal in">
+        <h1>${ic('userPlus')}Join the Academy</h1>
+        <p>One form, 30 seconds, a real seat on the leaderboard. The coach reviews every application personally — and answers every question.</p>
+      </div>
+
+      <section class="grid grid-2 join-grid" id="apply">
+        <div class="card join-pitch reveal">
+          <div class="jp-badge">${ic('grad')}</div>
+          <h3>Think you've got what it takes?</h3>
+          <p class="muted">Whether you're writing your first <span class="mono">if</span> statement or grinding for the national team — there's a seat (and a leaderboard) waiting for you.</p>
+          <ul class="jp-list">
+            <li>${ic('check')}Structured training in real groups — from Rookies to Elite</li>
+            <li>${ic('check')}Weekly problems, timed contests and a live leaderboard</li>
+            <li>${ic('check')}Topic mastery, levels and achievements to chase</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <div class="card-title">${ic('userPlus')}Apply now</div>
+          <form id="join-form" style="margin-top:14px">
+            <div class="field-row">
+              <label class="field"><span>Your name *</span><input class="input" id="jf-name" maxlength="60" placeholder="e.g. Amine Ben Salah"></label>
+              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="jf-age" type="number" min="4" max="120" placeholder="14"></label>
+            </div>
+            <label class="field"><span>Email *</span><input class="input" id="jf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
+            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="jf-level" maxlength="120" placeholder="e.g. Beginner in C++ — solved ~50 easy problems"></label>
+            <label class="field"><span>Anything else? <span class="muted tiny">(optional)</span></span><textarea class="input" id="jf-desc" rows="3" maxlength="600" placeholder="Why do you want to join? Experience, contests, goals…"></textarea></label>
+            <input type="text" id="jf-web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="join-done hidden" id="join-done">${ic('check')}<span>Application sent! The coach reviews every request and will reach out by email.</span></div>
+            <button class="btn btn-primary btn-block" type="submit">${ic('arrowRight')}Send application</button>
+          </form>
+        </div>
+      </section>
+
+      <div class="section-head reveal" style="margin-top:34px"><div><h2>${ic('help')}Just have a question?</h2><div class="sub">Not ready to join — or wondering about schedules, groups or anything else? Ask away.</div></div></div>
+      <section class="grid grid-2 join-grid" id="ask">
+        <div class="card join-pitch ask-pitch reveal">
+          <div class="jp-badge jp-badge-q">${ic('help')}</div>
+          <h3>No strings attached</h3>
+          <p class="muted">You don't need to join the academy to ask. Training times? Which group fits your level? How contests work? Type it below — the coach replies <b>by email</b>, usually within a day or two.</p>
+          <ul class="jp-list jp-list-q">
+            <li>${ic('check')}Asking a question is <b>not</b> an application</li>
+            <li>${ic('check')}Your email is only used to answer you</li>
+            <li>${ic('check')}Changed your mind later? Come back and apply anytime</li>
+          </ul>
+        </div>
+        <div class="card reveal">
+          <div class="card-title">${ic('help')}Ask the coach</div>
+          <form id="question-form" style="margin-top:14px">
+            <div class="field-row">
+              <label class="field"><span>Your name *</span><input class="input" id="qf-name" maxlength="60" placeholder="e.g. Yasmine Trabelsi"></label>
+              <label class="field" style="max-width:110px"><span>Age</span><input class="input" id="qf-age" type="number" min="4" max="120" placeholder="14"></label>
+            </div>
+            <label class="field"><span>Email *</span><input class="input" id="qf-email" type="email" maxlength="90" placeholder="you@example.com"></label>
+            <label class="field"><span>Your level <span class="muted tiny">(a word or two)</span></span><input class="input" id="qf-level" maxlength="120" placeholder="e.g. Total beginner — never coded before"></label>
+            <label class="field" style="margin-bottom:14px"><span>Your question *</span><textarea class="input" id="qf-question" rows="3" maxlength="800" placeholder="e.g. I have zero experience — can I still join? And when do trainings happen?"></textarea></label>
+            <input type="text" id="qf-web" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <div class="join-done hidden" id="q-done">${ic('check')}<span>Question sent! The coach will reply to your email soon.</span></div>
+            <button class="btn btn-primary btn-block" type="submit">${ic('arrowRight')}Send question</button>
+          </form>
+        </div>
+      </section>
+    </div>`;
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const wire = (formId, honeyId, doneId, build, send, toastMsg, toastIcon) => {
+      const form = U.$(`#${formId}`, root);
+      if (!form) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (U.$(`#${honeyId}`, root).value) { form.reset(); return; } // honeypot — silently drop bots
+        const data = build();
+        if (!data.name) return U.toast('Your name is required', 'error');
+        if (!emailRe.test(data.email)) return U.toast('Please enter a valid email address', 'error');
+        if (data.needQuestion && !data.question) return U.toast('Please type your question first', 'error');
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+        const r = await send(data);
+        if (btn) btn.disabled = false;
+        if (!r.ok) return U.toast('Something went wrong — please try again in a moment', 'error');
+        form.reset();
+        U.$(`#${doneId}`, root).classList.remove('hidden');
+        U.toast(toastMsg, 'success', toastIcon);
+        if (U.confetti) U.confetti();
+      });
+    };
+
+    wire('join-form', 'jf-web', 'join-done',
+      () => ({
+        name: U.$('#jf-name', root).value.trim(), email: U.$('#jf-email', root).value.trim(),
+        age: U.$('#jf-age', root).value, level: U.$('#jf-level', root).value,
+        description: U.$('#jf-desc', root).value,
+      }),
+      (d) => Store.addJoinRequest(d),
+      'Application sent — the coach will reach out soon!', 'userPlus');
+
+    wire('question-form', 'qf-web', 'q-done',
+      () => ({
+        name: U.$('#qf-name', root).value.trim(), email: U.$('#qf-email', root).value.trim(),
+        age: U.$('#qf-age', root).value, level: U.$('#qf-level', root).value,
+        question: U.$('#qf-question', root).value.trim(), needQuestion: true,
+      }),
+      (d) => Store.addQuestion(d),
+      'Question sent — the coach will reply by email!', 'help');
   };
 
   /* ============================================================ STUDENTS */
