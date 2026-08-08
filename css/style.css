@@ -321,7 +321,26 @@ table.table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:560px
 .coach-ach-item.more{color:var(--muted);padding:5px 12px}
 
 /* ---------- Join the academy ---------- */
+/* home "Join the Academy" call-to-action banner (before the coach section) */
+.join-cta{position:relative;overflow:hidden;display:flex;align-items:center;gap:26px;flex-wrap:wrap;
+  margin:0 0 28px;padding:30px 34px;border-radius:var(--radius);border:1px solid color-mix(in srgb,var(--accent) 45%,var(--border));
+  background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 14%,var(--card)),color-mix(in srgb,var(--accent-2) 12%,var(--card)) 60%,var(--card));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 8%,transparent),0 18px 50px -18px color-mix(in srgb,var(--accent) 45%,transparent)}
+.join-cta::before{content:"";position:absolute;inset:-40% 55% -40% -10%;background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 16%,transparent),transparent);pointer-events:none}
+.jc-copy{flex:1;min-width:280px;position:relative}
+.jc-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:.72rem;font-weight:700;letter-spacing:.14em;color:var(--accent)}
+.jc-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.join-cta h2{font-size:1.65rem;margin:8px 0 6px;line-height:1.25}
+.join-cta .muted{max-width:56ch;font-size:.92rem}
+.btn-jumbo{position:relative;font-size:1.02rem;font-weight:700;padding:16px 26px;border-radius:14px;white-space:nowrap;flex:none;
+  box-shadow:0 10px 30px -10px color-mix(in srgb,var(--accent) 60%,transparent);transition:transform .18s,box-shadow .18s}
+.btn-jumbo:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 16px 40px -12px color-mix(in srgb,var(--accent) 70%,transparent)}
+.btn-jumbo .icon{width:20px;height:20px}
+@media (max-width:760px){.join-cta{padding:24px 20px;text-align:center;justify-content:center}.join-cta h2{font-size:1.35rem}.btn-jumbo{width:100%;justify-content:center}}
+
 .join-grid{align-items:stretch}
+.jp-badge-q{background:color-mix(in srgb,var(--accent-2) 15%,transparent);color:var(--accent-2);border-color:color-mix(in srgb,var(--accent-2) 40%,transparent)}
+.jp-list-q .icon{color:var(--accent-2)}
 .join-pitch{display:flex;flex-direction:column;gap:12px;justify-content:center;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,var(--card)),var(--card))}
 .jp-badge{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
 .jp-badge .icon{width:26px;height:26px}
@@ -342,6 +361,7 @@ table.table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:560px
 .jr-mail{color:var(--accent);font-size:.85rem;word-break:break-all;text-decoration:none}
 .jr-mail:hover{text-decoration:underline}
 .jr-desc{color:var(--text-2);font-size:.85rem;margin-top:6px;line-height:1.5}
+.jr-q-mark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:6px;margin-right:7px;font-size:.72rem;font-weight:800;color:var(--accent-2);background:color-mix(in srgb,var(--accent-2) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent-2) 35%,transparent);vertical-align:-4px}
 .jr-actions{display:flex;gap:6px;flex:none}
 .jr-status{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:3px 9px;border-radius:999px}
 .jr-status.new{background:color-mix(in srgb,var(--gold) 15%,transparent);color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
