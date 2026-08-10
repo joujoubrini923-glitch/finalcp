@@ -63,11 +63,11 @@
     const g = Store.group(s.groupId);
     const ach = Store.achievementsOf(s.id);
     const topCls = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
-    return `<div class="card hoverable student-card reveal ${topCls}" onclick="location.hash='#/student/${s.id}'">
+    return `<div class="card hoverable student-card reveal ${topCls}" data-nav="#/student/${s.id}">
       ${rank ? `<span class="rank-tag">#${rank}</span>` : ''}
       ${U.avatarHTML(s, 'avatar-56')}
       <h3>${U.esc(s.name)}</h3>
-      <div class="sc-head">${C.levelChip(lvl, true)}${g ? `<a class="chip" href="#/group/${g.id}" onclick="event.stopPropagation()">${U.esc(g.name)}</a>` : ''}</div>
+      <div class="sc-head">${C.levelChip(lvl, true)}${g ? `<a class="chip" href="#/group/${g.id}" data-nav-stop>${U.esc(g.name)}</a>` : ''}</div>
       <div class="sc-ach">${ach.slice(0, 3).map((a) => C.achIcon(a)).join('')}${ach.length > 3 ? `<span class="more">+${ach.length - 3}</span>` : ''}</div>
       <div class="sc-stats">
         <div class="sc-stat"><b class="mono">${U.fmtNum(entry.score)}</b><span>Score</span></div>
@@ -616,7 +616,7 @@
       <div class="grid grid-3" id="groups-grid">
         ${gs.length ? gs.map((g, i) => {
       const st = Store.groupStats(g.id);
-      return `<div class="card hoverable reveal" style="cursor:pointer" onclick="location.hash='#/group/${g.id}'">
+      return `<div class="card hoverable reveal" style="cursor:pointer" data-nav="#/group/${g.id}">
             <div class="card-title">${ic('layers')}${U.esc(g.name)}</div>
             <p class="muted" style="margin:10px 0 16px;font-size:.9rem;line-height:1.55;min-height:44px">${U.esc(g.description || '—')}</p>
             <div class="sc-stats" style="border:none;padding-top:0;margin-top:0">
@@ -670,7 +670,7 @@
           <div class="card-title">${ic('trophy')}Group Leaderboard</div>
           <div class="table-wrap" style="margin-top:10px">
           ${lb.length ? `<table class="table"><thead><tr><th>#</th><th>Student</th><th>Level</th><th>Solved</th><th>Score</th></tr></thead><tbody>
-            ${lb.map((e, i) => `<tr style="cursor:pointer" onclick="location.hash='#/student/${e.s.id}'">
+            ${lb.map((e, i) => `<tr style="cursor:pointer" data-nav="#/student/${e.s.id}">
               <td class="rank-cell ${i < 3 ? 'r' + (i + 1) : ''}">${i + 1}</td>
               <td><div style="display:flex;align-items:center;gap:10px">${U.avatarHTML(e.s, 'avatar-36')}<b>${U.esc(e.s.name)}</b></div></td>
               <td>${C.levelChip(e.level, true)}</td><td class="num">${e.solved}</td><td class="num" style="color:var(--accent)">${U.fmtNum(e.score)}</td></tr>`).join('')}
@@ -741,7 +741,7 @@
             <tbody>
               ${lb.map((e, i) => {
         const g = Store.group(e.s.groupId);
-        return `<tr style="cursor:pointer" onclick="location.hash='#/student/${e.s.id}'">
+        return `<tr style="cursor:pointer" data-nav="#/student/${e.s.id}">
                 <td class="rank-cell ${i < 3 ? 'r' + (i + 1) : ''}">${i + 1}</td>
                 <td><div style="display:flex;align-items:center;gap:10px">${U.avatarHTML(e.s, 'avatar-36')}<b>${U.esc(e.s.name)}</b></div></td>
                 <td>${C.levelChip(e.level, true)}</td>
