@@ -11,7 +11,7 @@
    (Local Storage only) — nothing breaks.
    ============================================================ */
 window.SUPABASE_CONFIG = {
-  url: '',        // e.g. 'https://abcdefghijklm.supabase.co'   (Dashboard → Settings → API → Project URL)
-  anonKey: '',    // 'eyJhbGciOi...'                            (Settings → API → "anon" "public" key)
-  coachEmail: '', // email of the coach user you create in Authentication → Users
+  url: 'https://xfrsdzpraimwdxgkzuso.supabase.co',        // e.g. 'https://abcdefghijklm.supabase.co'   (Dashboard → Settings → API → Project URL)
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmcnNkenByYWltd2R4Z2t6dXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MDE3MTYsImV4cCI6MjEwMTI3NzcxNn0.Jxm0jzaDbTAX54HlC7WXmrXCMK5Y8N6Pl5iKcioN88E',    // 'eyJhbGciOi...'                            (Settings → API → "anon" "public" key)
+  coachEmail: 'joujoubrini923@gmail.com', // email of the coach user you create in Authentication → Users
 };
