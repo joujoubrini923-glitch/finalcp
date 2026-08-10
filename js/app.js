@@ -193,6 +193,19 @@
   }
 
   /* ---------------- boot ---------------- */
+
+  // Navigable cards/rows carry data-nav (CSP-safe replacement for inline
+  // onclick, which the Content-Security-Policy intentionally blocks).
+  // Inner links/buttons always win (same as the old stopPropagation()).
+  function initNavDelegation() {
+    document.addEventListener('click', (e) => {
+      const nav = e.target.closest && e.target.closest('[data-nav]');
+      if (!nav || !nav.dataset.nav) return;
+      const inner = e.target.closest('a, button, input, select, textarea, [data-nav-stop]');
+      if (inner && inner !== nav && nav.contains(inner)) return;
+      location.hash = nav.dataset.nav;
+    });
+  }
   function boot() {
     // first paint uses the local cache immediately; when cloud data arrives
     // (or the initial migration runs) the current view re-renders
@@ -200,6 +213,7 @@
     U.$('#year').textContent = new Date().getFullYear();
     initTheme();
     initSearch();
+    initNavDelegation();
     initBurger();
     initFx();
     App.updateAdminLink();
