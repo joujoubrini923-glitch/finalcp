@@ -1237,7 +1237,7 @@
         <td><input class="input" type="number" min="0" name="lv-topics" value="0"></td>
         <td><input class="input" type="number" min="0" name="lv-ach" value="0"></td>
         <td><input type="color" class="color-dot" name="lv-color" value="#38bdf8"></td>
-        <td><button class="icon-btn" onclick="this.closest('tr').remove()" style="color:var(--red)">${ic('trash')}</button></td>`;
+        <td><button class="icon-btn" data-lvdel style="color:var(--red)">${ic('trash')}</button></td>`;
       tb.appendChild(tr);
     };
     U.$('#lv-body', el).addEventListener('click', (ev) => {
