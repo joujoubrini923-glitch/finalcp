@@ -789,7 +789,7 @@
         <div>
           <span class="champions-intro-label">THE WALL</span>
           <h2>${finished.length ? 'Names worth remembering.' : 'The first stone is waiting.'}</h2>
-          <p>${finished.length ? `${finished.length} finished season${finished.length === 1 ? '' : 's'} · ${allChampions.length} podium place${allChampions.length === 1 ? '' : 's'} recorded.` : 'Create and finish a season from the Coach Panel. Its Top 2 will appear here automatically.'}</p>
+          <p>${finished.length ? `${finished.length} finished season${finished.length === 1 ? '' : 's'} · ${allChampions.length} podium place${allChampions.length === 1 ? '' : 's'} recorded.` : 'The first Top 2 champions will be remembered here.'}</p>
         </div>
         <div class="champions-intro-mark"><span>${finished.length ? finished.length : '—'}</span><small>SEASONS</small></div>
       </section>
@@ -812,7 +812,7 @@
               }).join('')}
             </div>
           </article>`).join('')}
-      </section>` : `<div class="champions-empty card reveal in"><div class="champions-empty-mark">${ic('crown')}</div><h2>No champions yet</h2><p>Start the first season, let students climb, then end it to crown the first names on the wall.</p><a class="btn btn-ghost btn-sm" href="#/join">Ask about the academy</a></div>`}
+      </section>` : `<div class="champions-empty card reveal in"><div class="champions-empty-mark">${ic('crown')}</div><h2>No champions yet</h2><p>The wall is ready for its first Top 2.</p></div>`}
       ${latest ? `<div class="champions-note reveal"><span>${ic('trophy')}</span><p>Latest season champion: <b>${U.esc(resolveChampion(latest.champions[0]).name)}</b></p></div>` : ''}
     </div>`;
   };
