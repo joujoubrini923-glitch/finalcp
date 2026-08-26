@@ -1,0 +1,18 @@
+{
+  "name": "Abdelmajid CP \u2014 Competitive Programming Academy",
+  "short_name": "Abdelmajid CP",
+  "description": "Competitive programming academy progress tracking platform.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#080a08",
+  "theme_color": "#080a08",
+  "icons": [
+    {
+      "src": "academy-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
