@@ -1,0 +1,68 @@
+/* Abdelmajid CP — icons.js : inline SVG icon set (24x24, stroke based) */
+(function () {
+  const p = {
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+    users: '<circle cx="9" cy="8" r="3.6"/><path d="M2.8 20c0-3.4 2.8-6 6.2-6s6.2 2.6 6.2 6"/><path d="M16 4.9a3.6 3.6 0 0 1 0 6.3"/><path d="M17.6 14.3c2.1.8 3.6 2.8 3.6 5.7"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/>',
+    userPlus: '<circle cx="10" cy="8" r="3.8"/><path d="M3.5 20.5c0-3.6 2.9-6.3 6.5-6.3s6.5 2.7 6.5 6.3"/><path d="M19 7v6M16 10h6"/>',
+    layers: '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/>',
+    trophy: '<path d="M7 4h10v6a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4h1M17 6h3a2 2 0 0 1-2 4h-1"/><path d="M12 15v3"/><path d="M8 21h8M9.5 18h5"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.4"/>',
+    chart: '<path d="M4 4v16h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+    trend: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    medal: '<circle cx="12" cy="15" r="5"/><path d="m8.6 10.8-2.9-7h4.7l1.6 3.9L13.6 3.8h4.7l-2.9 7"/>',
+    award: '<circle cx="12" cy="9.5" r="5.5"/><path d="m8.8 13.8-1.6 7 4.8-2.6 4.8 2.6-1.6-7"/>',
+    crown: '<path d="M3 8l4.2 4L12 5.5 16.8 12 21 8l-1.6 10H4.6L3 8Z"/>',
+    flame: '<path d="M12 3s5.5 4.4 5.5 9.5a5.5 5.5 0 0 1-11 0c0-2 .9-3.6.9-3.6S8.6 10 10 10c0-3 .6-5 2-7Z"/>',
+    shield: '<path d="m12 3 7.5 3v6c0 4.6-3.1 7.7-7.5 9.3C7.6 19.7 4.5 16.6 4.5 12V6L12 3Z"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/><path d="M12 15.5v2"/>',
+    unlock: '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 7.8-1.3"/><path d="M12 15.5v2"/>',
+    search: '<circle cx="11" cy="11" r="6.8"/><path d="m16.4 16.4 4.6 4.6"/>',
+    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>',
+    moon: '<path d="M20.8 13.2A8.8 8.8 0 1 1 10.8 3.2a7.2 7.2 0 0 0 10 10Z"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    x: '<path d="M6 6l12 12M18 6 6 18"/>',
+    check: '<path d="m4.5 12.5 5 5 10-11"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.6 3.9a2.1 2.1 0 0 1 3 3L8.2 18.3 3.8 19.4 5 15l11.6-11.1Z"/>',
+    trash: '<path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="m6.2 7 .9 13.5h9.8L17.8 7"/><path d="M10 11.5v5.5M14 11.5v5.5"/>',
+    download: '<path d="M12 3.5v11M7.5 10 12 14.5 16.5 10"/><path d="M4 17.5v2A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-2"/>',
+    upload: '<path d="M12 14.5v-11M7.5 8 12 3.5 16.5 8"/><path d="M4 17.5v2A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5v-2"/>',
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+    chevronRight: '<path d="m9 6 6 6-6 6"/>',
+    chevronLeft: '<path d="m15 6-6 6 6 6"/>',
+    external: '<path d="M13.5 4.5H19.5V10.5"/><path d="M19.5 4.5 11 13"/><path d="M15 13.5V19a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 19v-8A1.5 1.5 0 0 1 5.5 9.5H11"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10.5h16M8.5 3v4M15.5 3v4"/>',
+    arrowRight: '<path d="M4 12h15M14 6.5 19.5 12 14 17.5"/>',
+    arrowLeft: '<path d="M20 12H5M10 6.5 4.5 12 10 17.5"/>',
+    logout: '<path d="M9 20.5H6a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h3"/><path d="M15.5 16.5 20.5 12l-5-4.5"/><path d="M20.5 12H9.5"/>',
+    settings: '<path d="M4 7h8M17 7h3"/><circle cx="14.5" cy="7" r="2"/><path d="M4 12h2M11 12h9"/><circle cx="8.5" cy="12" r="2"/><path d="M4 17h10M19 17h1"/><circle cx="16.5" cy="17" r="2"/>',
+    database: '<ellipse cx="12" cy="5.8" rx="7.2" ry="2.8"/><path d="M4.8 5.8v12.4c0 1.6 3.2 2.8 7.2 2.8s7.2-1.2 7.2-2.8V5.8"/><path d="M4.8 12c0 1.6 3.2 2.8 7.2 2.8s7.2-1.2 7.2-2.8"/>',
+    star: '<path d="m12 3.2 2.6 5.7 6.2.7-4.6 4.2 1.2 6.1-5.4-3-5.4 3 1.2-6.1L3.2 9.6l6.2-.7L12 3.2Z"/>',
+    zap: '<path d="M13 2.5 4.5 14H11l-1 7.5L18.5 10H12l1-7.5Z"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.4 2"/>',
+    menu: '<path d="M4 6.5h16M4 12h16M4 17.5h16"/>',
+    filter: '<path d="M4 5h16l-6.2 7.3v5.9l-3.6 1.8v-7.7L4 5Z"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.8"/>',
+    grad: '<path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6.2 11.7v4.6c0 1.6 2.6 2.9 5.8 2.9s5.8-1.3 5.8-2.9v-4.6"/><path d="M22 9.2v5.3"/>',
+    code: '<path d="m8 8.5-4.5 3.5 4.5 3.5M16 8.5l4.5 3.5-4.5 3.5"/>',
+    key: '<circle cx="8" cy="15.5" r="4.2"/><path d="m11.2 12.3 8.6-8.6M17 5l2.5 2.5M14 8l2 2"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 10.8v5.4M12 7.4v.2"/>',
+    help: '<circle cx="12" cy="12" r="8.5"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.3.7c0 1.8-2.7 2.2-2.7 3.6M12 17v.2"/>',
+    message: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-5 4V6.5Z"/>',
+    warn: '<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.6M12 17.2v.2"/>',
+    flag: '<path d="M5 21V4"/><path d="M5 4.8c4.5-2.4 7.6 2 13 .2v9.2c-5.4 1.8-8.5-2.6-13-.2"/>',
+    refresh: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.7h-4.7"/>',
+    save: '<path d="M5 4h11l3.5 3.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h7V4M8 21v-7h8v7"/>',
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+    link: '<path d="M10 14a5 5 0 0 0 7.5.5l2.5-2.5a5 5 0 0 0-7-7l-1.5 1.3"/><path d="M14 10a5 5 0 0 0-7.5-.5L4 12a5 5 0 0 0 7 7l1.5-1.3"/>',
+    hash: '<path d="M9 4 7 20M17 4l-2 16M4.5 8.8h16M3.5 15.2h16"/>',
+  };
+
+  // public helper: ic('name', 'extra-class') -> svg string
+  window.ICONS = p;
+  window.ic = function (name, cls) {
+    const body = p[name] || p.info;
+    return `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+  };
+})();
